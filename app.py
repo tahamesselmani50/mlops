@@ -1,6 +1,7 @@
 # ===== 1. Importer les bibliothèques =====
+import os                         # lire les variables d'environnement
 from typing import Literal        # pour limiter les valeurs possibles d'un champ
-import mlflow                     # charger le modèle depuis le Registry
+import mlflow                     # charger le modèle (Registry ou dossier)
 import mlflow.sklearn
 import pandas as pd               # fabriquer le tableau attendu par le modèle
 from fastapi import FastAPI       # le cadre de travail de l'API
@@ -9,12 +10,20 @@ from pydantic import BaseModel    # décrire et valider les données reçues
 # ===== 2. Créer l'application =====
 app = FastAPI(title="API Churn")  # le titre s'affiche dans la page /docs
 
-# ===== 3. Charger le champion UNE SEULE FOIS, au démarrage =====
-# (le recharger à chaque requête rendrait l'API très lente)
-mlflow.set_tracking_uri("sqlite:///mlflow.db")
-model = mlflow.sklearn.load_model("models:/churn-model@champion")
+# ===== 3. Lire la configuration dans les variables d'environnement =====
+# Rien n'est écrit « en dur » : le même code marche sur le poste, dans un
+# conteneur seul, ou dans Docker Compose. Seules les variables changent.
+# os.getenv("NOM", "valeur") : valeur de la variable, ou valeur par défaut si elle n'existe pas
+TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "sqlite:///mlflow.db")
+MODEL_URI = os.getenv("MODEL_URI", "models:/churn-model@champion")
 
-# ===== 4. Décrire les données attendues (validées automatiquement) =====
+# ===== 4. Charger le champion UNE SEULE FOIS, au démarrage =====
+# MODEL_URI peut être une adresse du Registry (models:/...) ou un simple dossier (model)
+mlflow.set_tracking_uri(TRACKING_URI)
+model = mlflow.sklearn.load_model(MODEL_URI)
+print(f"Modèle chargé depuis : {MODEL_URI}")
+
+# ===== 5. Décrire les données attendues (validées automatiquement) =====
 class Client(BaseModel):
     age: int                                                 # nombre entier
     salaire: float                                           # nombre décimal
@@ -22,12 +31,12 @@ class Client(BaseModel):
     anciennete: float
     consommation: float
 
-# ===== 5. Route /health : vérifier que l'API est en vie =====
+# ===== 6. Route /health : vérifier que l'API est en vie =====
 @app.get("/health")      # GET : on lit, on n'envoie rien
 def health():
     return {"status": "ok"}
 
-# ===== 6. Route /predict : recevoir un client, renvoyer la prédiction =====
+# ===== 7. Route /predict : recevoir un client, renvoyer la prédiction =====
 @app.post("/predict")    # POST : on envoie un client
 def predict(client: Client):   # FastAPI vérifie le JSON reçu avec Client
     # a) transformer le client reçu en tableau d'une ligne
