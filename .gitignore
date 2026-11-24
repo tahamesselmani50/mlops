@@ -2,6 +2,7 @@ venv/
 __pycache__/
 .ipynb_checkpoints/
 model.pkl
+model/
 churn_data.csv
 mlruns/
 mlflow.db

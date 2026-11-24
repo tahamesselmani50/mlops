@@ -1,6 +1,6 @@
 import requests  # envoyer des requêtes HTTP depuis Python
 
-URL = "http://127.0.0.1:8001"  # l'adresse de notre API
+URL = "http://127.0.0.1:8000"  # l'adresse de notre API
 
 # 1. L'API est-elle en vie ?
 print("GET /health ->", requests.get(URL + "/health").json())
