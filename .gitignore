@@ -3,6 +3,7 @@ __pycache__/
 .ipynb_checkpoints/
 model.pkl
 model/
+token
 churn_data.csv
 mlruns/
 mlflow.db
